@@ -7,14 +7,14 @@
             "lvl_xp": 45,
             "respawn_sekunden": 7.5
         },
-        "melonen_golem": {
+        "melonen golem": {
             "image": "golem.png",
             "text": "Ein seltener Boss-Gegner.",
             "skill_xp": 1000,
             "lvl_xp": 500,
             "respawn_sekunden": 13
         },
-        "mutierte_ziege": {
+        "mutierte ziege": {
             "image": "ziege.png",
             "text": "Ziege boss der von Rüben Spawnt",
             "skill_xp": 2000,
