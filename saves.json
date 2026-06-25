@@ -7,12 +7,12 @@
             "lvl_xp": 45,
             "respawn_sekunden": 7.5
         },
-        "boss_golem": {
+        "melonen_golem": {
             "image": "golem.png",
             "text": "Ein seltener Boss-Gegner.",
-            "skill_xp": 1000,
-            "lvl_xp": 5,
-            "respawn_sekunden": 120
+            "skill_xp": 2000,
+            "lvl_xp": 1000,
+            "respawn_sekunden": 13
         },
         "ziege": {
             "image": "ziege.png",
