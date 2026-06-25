@@ -13,6 +13,13 @@
             "skill_xp": 1000,
             "lvl_xp": 5,
             "respawn_sekunden": 120
+        },
+        "ziege": {
+            "image": "ziege.png",
+            "text": "Ziege boss der von Rüben Spawnt",
+            "skill_xp": 4000,
+            "lvl_xp": 1000,
+            "respawn_sekunden": 71
         }
     },
     "resource": {}
