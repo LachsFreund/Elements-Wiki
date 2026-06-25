@@ -14,7 +14,7 @@
             "lvl_xp": 1000,
             "respawn_sekunden": 13
         },
-        "ziege": {
+        "mutierte_ziege": {
             "image": "ziege.png",
             "text": "Ziege boss der von Rüben Spawnt",
             "skill_xp": 4000,
