@@ -419,6 +419,36 @@ button:active{
     display: inline-block;
 }
 
+/* ==========================
+    XP BOOST CHECKBOX
+========================== */
+.boost-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.boost-container input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--purple); /* Färbt den Haken lila */
+    cursor: pointer;
+}
+
+.boost-container label {
+    color: var(--white);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.boost-container label:hover {
+    color: var(--purple);
+}
+
 </style>
 </head>
 
@@ -466,39 +496,53 @@ button:active{
     <div id="rechner" class="page">
 
         <div class="card">
-
             <h2>Calculator</h2>
-
             <input id="display" class="display" type="text" placeholder="0">
-
         </div>
 
         <div class="card">
-
             <h2>Farm Calculator</h2>
 
-            <select id="typeSelect" onchange="updateMobList()"></select>
-
+            <!-- Haupt-Auswahl (onchange korrigiert, damit sich Dropdowns UND Eingabefelder aktualisieren) -->
+            <select id="typeSelect" onchange="updateMobList(); toggleInputFields();"></select>
             <select id="mobSelect"></select>
 
             <br><br>
 
-            <input id="amount" type="number" placeholder="Zeit">
+            <!-- NEU: Modus-Auswahl für Mobs/Resources (Wird bei Arena automatisch ausgeblendet) -->
+            <div id="calc-mode-container" style="margin-bottom: 15px;">
+                <select id="calcMode" onchange="toggleInputFields()">
+                    <option value="zeit">Farm-Dauer</option>
+                    <option value="target_skill">Wunsch Skill-XP</option>
+                    <option value="target_lvl">Wunsch Level-XP</option>
+                </select>
+            </div>
 
-            <select id="unit">
-                <option value="min">Minuten</option>
-                <option value="h">Stunden</option>
-            </select>
+            <!-- DYNAMISCHES EINGABEFELD (Das JS steuert hier drin Platzhalter und Zeiteinheit) -->
+            <div id="dynamic-inputs" style="display: inline-block; width: 100%;">
+                <input id="amount" type="number" placeholder="Zeit">
+                <select id="unit">
+                    <option value="min">Minuten</option>
+                    <option value="h">Stunden</option>
+                </select>
+            </div>
 
-            <br><br>
+            <div class="boost-container">
+                <input type="checkbox" id="xpBoost">
+                <label for="xpBoost">Server Skill & Lvl Boost</label>
+            </div>
+
+            <div class="boost-container" id="frucht-container" style="display: none;"></div>
+
+            <br>
 
             <button class="calc-action" onclick="calculateFarm()">Berechnen</button>
 
-            <div id="result"></div>
-
-        </div>
+        <div id="result"></div>
 
     </div>
+
+</div>
 
 </div>
 
