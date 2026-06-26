@@ -23,6 +23,17 @@
                 "respawn_sekunden": 1,
                 "frucht": "farming"
             },
+            "beetroot": {
+                "image": "beetroot.png",
+                "text": "Eine rote Rübe",
+                "skill_xp": 1,
+                "lvl_xp": 1,
+                "respawn_sekunden": 1,
+                "frucht": "farming",
+            },
+
+
+            
             "iron_ore": {
                 "image": "iron_ore.png",
                 "text": "Ein Erz das in den tieferen Mienen im Dorf gefunden werden kann",
