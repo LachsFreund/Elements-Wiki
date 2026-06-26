@@ -12,6 +12,10 @@ const FRUCHT_SYSTEM = {
     wood:   { name: "Wood Frucht",   prozent: 100 }
 };
 
+const TRANK_SYSTEM = {
+    klein: { name: "Kleine Mana", mana: 100, preis_lvl: 250 },
+    gross: { name: "Große Mana", mana: 200, preis_lvl: 500 }
+};
 
 let activeWikiTab = "mob";
 
@@ -206,12 +210,12 @@ function updateMobList(){
         }
     }
 
-    toggleInputFields();
+    toggleInputFields(true);
 }
 
 // MINECRAFT ELEMENTS FARM CALCULATOR (Kills, Skill-XP & Level-XP)
 function calculateFarm(){
-    const typeSelect = document.getElementById("typeSelect");
+const typeSelect = document.getElementById("typeSelect");
     const mobSelect = document.getElementById("mobSelect");
     const amountInput = document.getElementById("amount");
     const calcMode = document.getElementById("calcMode");
@@ -223,7 +227,7 @@ function calculateFarm(){
     const name = mobSelect.value;
     const inputValue = parseFloat(amountInput.value);
 
-    // Setzt die Textfarbe des Ergebnisses standardmäßig auf Weiß zurück, damit es nicht rot bleibt
+    // Setzt die Textfarbe des Ergebnisses standardmäßig auf Weiß zurück
     result.style.color = "var(--white)";
 
     if (isNaN(inputValue) || inputValue <= 0) {
@@ -239,7 +243,7 @@ function calculateFarm(){
         return;
     }
 
-    // FIX: Macht die Mobs-Suche unempfindlich gegen Groß-/Kleinschreibung (sucht z.B. nach "höhlenspinne")
+    // Sucht nach dem Eintrag im JSON (unempfindlich gegen Groß-/Kleinschreibung)
     let data = category.entries[name];
     if (!data) {
         const lowerName = name.toLowerCase();
@@ -247,7 +251,26 @@ function calculateFarm(){
         if (foundKey) data = category.entries[foundKey];
     }
 
-    if (!data || Object.keys(data).length === 0 || !("skill_xp" in data) || !("lvl_xp" in data)) {
+    // 1. DYNAMISCHER DATEN-CHECK: Trennt Magie (verlangt kein 'lvl_xp') von den restlichen Typen
+    if (type === "magie") {
+        if (!data || Object.keys(data).length === 0 || !("skill_xp" in data) || !("mana_kosten" in data)) {
+            result.style.color = "red";
+            result.innerText = "No Data";
+            return;
+        }
+    } else {
+        if (!data || Object.keys(data).length === 0 || !("skill_xp" in data) || !("lvl_xp" in data)) {
+            result.style.color = "red";
+            result.innerText = "No Data";
+            return;
+        }
+    }
+
+    const baseSkillXp = Number(data.skill_xp);
+    const baseLvlXp = type === "magie" ? 0 : Number(data.lvl_xp); // Verhindert Fehler bei Magie-Items
+    const baseManaKosten = type === "magie" ? Number(data.mana_kosten) : 0;
+
+    if (!Number.isFinite(baseSkillXp) || (type !== "magie" && !Number.isFinite(baseLvlXp))) {
         result.style.color = "red";
         result.innerText = "No Data";
         return;
@@ -266,20 +289,11 @@ function calculateFarm(){
         actionWordRequired = "BENÖTIGTES ABBAUEN";
     }
 
-    const baseSkillXp = Number(data.skill_xp);
-    const baseLvlXp = Number(data.lvl_xp);
-
-    if (!Number.isFinite(baseSkillXp) || !Number.isFinite(baseLvlXp)) {
-        result.style.color = "red";
-        result.innerText = "No Data";
-        return;
-    }
-
-    // 1. Server-Boost berechnen (x2 bei Boost, sonst x1)
+    // 2. SERVER-BOOST BERECHNEN (x2 bei Boost, sonst x1)
     const xpBoostChecked = document.getElementById("xpBoost")?.checked;
     const boostMultiplier = xpBoostChecked ? 2 : 1;
 
-    // 2. Frucht-Boost über das zentrale System auslesen
+    // 3. FRUCHT-BOOST ÜBER DAS ZENTRALE SYSTEM AUSLESEN
     const fruchtChecked = document.getElementById("fruchtBoost")?.checked;
     let skillFruchtBonusFactor = 1; 
 
@@ -287,7 +301,7 @@ function calculateFarm(){
         skillFruchtBonusFactor = 1 + (FRUCHT_SYSTEM[data.frucht].prozent / 100);
     }
 
-    // 3. Multiplikatoren zusammenführen
+    // 4. MULTIPLIKATOREN ZUSAMMENFÜHREN: Frucht wird auf den bereits aktiven Server-Boost multipliziert
     const finalSkillMultiplier = boostMultiplier * skillFruchtBonusFactor;
     const finalLvlMultiplier = boostMultiplier; 
 
@@ -295,20 +309,136 @@ function calculateFarm(){
     const realLvlXpPerKill = baseLvlXp * finalLvlMultiplier;
 
     // ==========================================
-    // ARENA-LOGIK (Rechnen mit Keys)
+    // BOSS-LOGIK (Rechnen mit Keys)
     // ==========================================
-    if (type === "arena") {
+    if (type === "boss") {
         const keysCost = Number(data.keys_benoetigt) || 1; 
         const totalRuns = Math.floor(inputValue / keysCost);
 
         if (totalRuns <= 0) {
             result.style.color = "red";
-            result.innerText = "Nicht genug Keys für einen Arena-Run!";
+            result.innerText = "Nicht genug Keys für einen Boss-Run!";
             return;
         }
 
         result.innerText = `RUNS: ${totalRuns} | SKILL XP: +${realSkillXpPerKill * totalRuns} | LVL XP: +${realLvlXpPerKill * totalRuns}`;
         return;
+    }
+
+    // ==========================================
+    // MAGIE-LOGIK (Tränke & Levelkosten ohne Zeitrechnung bei Pots)
+    // ==========================================
+    if (type === "magie") {
+        const mode = calcMode.value;
+        
+        const maxManaInput = parseFloat(document.getElementById("maxMana")?.value);
+        const kleinTrankChecked = document.getElementById("useKleinTrank")?.checked;
+        const grossTrankChecked = document.getElementById("useGrossTrank")?.checked;
+        
+        const isUsingPotions = kleinTrankChecked || grossTrankChecked;
+        // Wenn Tränke aktiv sind, wird die natürliche Regeneration laut Vorgabe ignoriert
+        const manaRegenInput = isUsingPotions ? 0 : parseFloat(document.getElementById("manaRegen")?.value);
+
+        if (isNaN(maxManaInput) || maxManaInput <= 0) {
+            result.style.color = "red";
+            result.innerText = "Bitte gültiges Max Mana eintragen!";
+            return;
+        }
+
+        if (!isUsingPotions && (isNaN(manaRegenInput) || manaRegenInput < 0)) {
+            result.style.color = "red";
+            result.innerText = "Bitte gültige Mana-Regeneration eintragen!";
+            return;
+        }
+
+        // Interne Simulations-Funktion: Berechnet Klicks, Tränke, Level-Kosten UND Zeit (nur für Regen)
+        function calculatePotionSimulation(uses) {
+            let currentMana = maxManaInput;
+            let kleinPotsUsed = 0;
+            let grossPotsUsed = 0;
+            let secondsElapsed = 0; 
+
+            for (let i = 0; i < uses; i++) {
+                while (currentMana < baseManaKosten) {
+                    if (baseManaKosten > maxManaInput) return { error: "Max Mana zu niedrig für dieses Item!" };
+                    
+                    // FALL A: Tränke aktiv -> Sofort aufladen (Keine Zeitberechnung)
+                    if (isUsingPotions) {
+                        if (grossTrankChecked && (maxManaInput - currentMana >= TRANK_SYSTEM.gross.mana || !kleinTrankChecked)) {
+                            currentMana += TRANK_SYSTEM.gross.mana;
+                            grossPotsUsed++;
+                        } else if (kleinTrankChecked) {
+                            currentMana += TRANK_SYSTEM.klein.mana;
+                            kleinPotsUsed++;
+                        }
+                    } 
+                    // FALL B: Keine Tränke aktiv -> Auf natürliche Regeneration warten (Mit Zeitberechnung)
+                    else {
+                        if (manaRegenInput <= 0) return { error: "Mana leer! Trage Mana-Regen ein oder nutze Tränke!" };
+                        
+                        const manaNeeded = baseManaKosten - currentMana;
+                        const waitSeconds = Math.ceil(manaNeeded / manaRegenInput);
+                        
+                        secondsElapsed += waitSeconds;          
+                        currentMana += waitSeconds * manaRegenInput; 
+                    }
+                    
+                    if (currentMana > maxManaInput) currentMana = maxManaInput;
+                }
+
+                currentMana -= baseManaKosten;
+                
+                // Zeit zählt nur hoch, wenn KEINE Tränke genutzt werden (reiner Regen-Modus)
+                if (!isUsingPotions) {
+                    secondsElapsed += 1; 
+                    currentMana += manaRegenInput;
+                    if (currentMana > maxManaInput) currentMana = maxManaInput;
+                }
+            }
+
+            const totalLvlCost = (kleinPotsUsed * TRANK_SYSTEM.klein.preis_lvl) + (grossPotsUsed * TRANK_SYSTEM.gross.preis_lvl);
+            return { klein: kleinPotsUsed, gross: grossPotsUsed, lvlCost: totalLvlCost, seconds: secondsElapsed };
+        }
+
+        if (mode === "target_uses" || mode === "target_skill") {
+            const totalUses = mode === "target_uses" ? Math.floor(inputValue) : Math.ceil(inputValue / realSkillXpPerKill);
+            if (totalUses <= 0) { result.style.color = "red"; result.innerText = "Ungültige Eingabe!"; return; }
+
+            const sim = calculatePotionSimulation(totalUses);
+            
+            if (sim.error) {
+                result.style.color = "red";
+                result.innerText = sim.error;
+                return;
+            }
+
+            // Zeit-Text nur generieren, wenn keine Tränke aktiv sind
+            let timeStr = "";
+            if (!isUsingPotions) {
+                const hours = Math.floor(sim.seconds / 3600);
+                const minutes = Math.ceil((sim.seconds % 3600) / 60);
+                timeStr = hours > 0 ? `| FARMZEIT: ca. ${hours}h ${minutes}m ` : `| FARMZEIT: ca. ${minutes}m `;
+            }
+
+            // Textausgabe für den Output zusammenbauen
+            let potionText = "";
+            if (isUsingPotions) {
+                potionText = `| TRÄNKE: `;
+                if (sim.gross > 0) potionText += `Große: ${sim.gross} `;
+                if (sim.klein > 0) potionText += `Kleine: ${sim.klein} `;
+                if (sim.gross === 0 && sim.klein === 0) potionText += `0x `;
+                potionText += `| KOSTEN: ${sim.lvlCost} Level`;
+            } else {
+                potionText = `| MANA-REGEN`;
+            }
+
+            if (mode === "target_uses") {
+                result.innerText = `NUTZUNGEN: ${totalUses} ${timeStr}| SKILL XP: +${realSkillXpPerKill * totalUses} | MANACOST: ${baseManaKosten * totalUses} ${potionText}`;
+            } else {
+                result.innerText = `NUTZUNGEN: ${totalUses} ${timeStr}| MANAVERBRAUCH: ${baseManaKosten * totalUses} Mana | ERHALTENE SKILL XP: +${realSkillXpPerKill * totalUses} ${potionText}`;
+            }
+            return;
+        }
     }
 
     // ==========================================
@@ -397,6 +527,7 @@ function openDetail(type, name){
             if (lowerKey === "respawn_sekunden") displayName = "RESPAWNTIME";
             if (lowerKey === "keys_benoetigt") displayName = "KEYS BENÖTIGT";
             if (lowerKey === "frucht") displayName = "FRUCHT";
+            if (lowerKey === "mana_kosten") displayName = "MANA KOSTEN";
 
             // FIX: Nutzt jetzt wieder deine korrekte CSS-Klasse ".wiki-stat-row" für die Boxen!
             infoboxRowsHtml += `
@@ -442,8 +573,6 @@ function openDetail(type, name){
     if (wikiContent) wikiContent.scrollTop = 0;
 }
 
-
-
 function closeDetail(type){
     const list = document.getElementById("wiki-" + type);
     const detail = document.getElementById("wiki-" + type + "-detail");
@@ -459,6 +588,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     const typeSelect = document.getElementById("typeSelect");
     if(typeSelect) {
         typeSelect.addEventListener("change", updateMobList);
+    }
+
+    const calcModeSelect = document.getElementById("calcMode");
+    if(calcModeSelect) {
+        calcModeSelect.addEventListener("change", toggleInputFields);
     }
     
     const firstTabBtn = document.querySelector("#wiki-tabs .btn-tab");
@@ -487,7 +621,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         mobSelect.addEventListener("change", () => {
             const typeSelect = document.getElementById("typeSelect");
             if (typeSelect) {
-                const currentData = wiki?.[typeSelect.value]?.[mobSelect.value];
+                const currentData = wiki?.[typeSelect.value]?.entries?.[mobSelect.value];
                 const fruchtContainer = document.getElementById("frucht-container");
                 if (fruchtContainer) {
                     if (currentData && currentData.frucht && FRUCHT_SYSTEM[currentData.frucht]) {
@@ -507,8 +641,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
     
     updateMobList();
-    toggleInputFields();
+    toggleInputFields(true);
 });
+
 
 function createWikiTabs(){
     const tabs = document.getElementById("wiki-tabs");
@@ -570,34 +705,98 @@ function createTypeSelect(){
     });
 }
 
-function toggleInputFields() {
+function toggleInputFields(isTypeChange = false) {
     const typeSelect = document.getElementById("typeSelect");
     const calcMode = document.getElementById("calcMode");
     const modeContainer = document.getElementById("calc-mode-container");
     const amountInput = document.getElementById("amount");
     const unitSelect = document.getElementById("unit");
+    const manaContainer = document.getElementById("mana-inputs-container");
+    const trankContainer = document.getElementById("trank-inputs-container"); // Zentral für beide Schritte ausgelesen
 
     if (!typeSelect || !amountInput || !unitSelect || !calcMode) return;
 
     const type = typeSelect.value;
     amountInput.style.width = ""; 
+    
+    const oldMode = calcMode.value;
 
-    if (type === "arena") {
-        if (modeContainer) modeContainer.style.display = "none"; 
-        unitSelect.style.display = "none";                      
+    // 1. SCHRITT: Optionen NUR neu aufbauen, wenn sich der Haupt-Typ oben geändert hat!
+    if (isTypeChange === true) {
+        calcMode.innerHTML = ""; 
+
+        if (type === "boss") {
+            if (modeContainer) modeContainer.style.display = "none"; 
+            unitSelect.style.display = "none";                      
+            amountInput.placeholder = "Anzahl Keys";
+            if (manaContainer) manaContainer.style.display = "none";
+            if (trankContainer) trankContainer.style.display = "none"; // Hier korrigiert
+            return;
+        } 
+        else if (type === "magie") {
+            if (modeContainer) modeContainer.style.display = "block";
+            calcMode.innerHTML = `
+                <option value="target_uses">Anzahl Uses</option>
+                <option value="target_skill">Wunsch Skill-XP</option>
+            `;
+            if (oldMode === "target_skill" || oldMode === "target_uses") {
+                calcMode.value = oldMode;
+            } else {
+                calcMode.value = "target_uses";
+            }
+        } else {
+            if (modeContainer) modeContainer.style.display = "block";
+            calcMode.innerHTML = `
+                <option value="zeit">Farm-Dauer</option>
+                <option value="target_skill">Wunsch Skill-XP</option>
+                <option value="target_lvl">Wunsch Level-XP</option>
+            `;
+            if (oldMode === "zeit" || oldMode === "target_skill" || oldMode === "target_lvl") {
+                calcMode.value = oldMode;
+            } else {
+                calcMode.value = "zeit";
+            }
+        }
+    }
+
+    // =================================================================
+    // 2. SCHRITT: Nur Platzhalter & Zeiteinheiten anpassen (ohne Löschen!)
+    // =================================================================
+    if (type === "boss") {
+        if (modeContainer) modeContainer.style.display = "none";
+        unitSelect.style.display = "none";
         amountInput.placeholder = "Anzahl Keys";
-    } else {
-        if (modeContainer) modeContainer.style.display = "block"; 
-        const mode = calcMode.value;
+        if (manaContainer) manaContainer.style.display = "none";
+        if (trankContainer) trankContainer.style.display = "none"; // Hier korrigiert
+        return;
+    }
 
+    if (modeContainer) modeContainer.style.display = "block";
+    const mode = calcMode.value;
+
+    if (type === "magie") {
+        unitSelect.style.display = "none"; 
+        if (manaContainer) manaContainer.style.display = "flex"; 
+        if (trankContainer) trankContainer.style.display = "flex"; // Schaltet Trank-Checkboxen bei Magie ein
+        
+        if (mode === "target_uses") {
+            amountInput.placeholder = "Anzahl Nutzungen (Uses)";
+        } else if (mode === "target_skill") {
+            amountInput.placeholder = "Wunsch Skill-XP";
+        }
+    } 
+    else {
+        if (manaContainer) manaContainer.style.display = "none"; 
+        if (trankContainer) trankContainer.style.display = "none"; // Schaltet Trank-Checkboxen bei Mobs/Resources aus
+        
         if (mode === "zeit") {
             unitSelect.style.display = "inline-block";           
             amountInput.placeholder = "Zeit";
         } else if (mode === "target_skill") {
-            unitSelect.style.display = "none";                  
+            unitSelect.style.display = "none";
             amountInput.placeholder = "Wunsch Skill-XP";
         } else if (mode === "target_lvl") {
-            unitSelect.style.display = "none";                  
+            unitSelect.style.display = "none";
             amountInput.placeholder = "Wunsch Level-XP";
         }
     }

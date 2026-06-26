@@ -449,6 +449,11 @@ button:active{
     color: var(--purple);
 }
 
+#mana-inputs-container input {
+    width: auto;
+    flex: none;
+}
+
 </style>
 </head>
 
@@ -503,6 +508,8 @@ button:active{
         <div class="card">
             <h2>Farm Calculator</h2>
 
+            <br>
+
             <!-- Haupt-Auswahl (onchange korrigiert, damit sich Dropdowns UND Eingabefelder aktualisieren) -->
             <select id="typeSelect" onchange="updateMobList(); toggleInputFields();"></select>
             <select id="mobSelect"></select>
@@ -511,11 +518,7 @@ button:active{
 
             <!-- NEU: Modus-Auswahl für Mobs/Resources (Wird bei Arena automatisch ausgeblendet) -->
             <div id="calc-mode-container" style="margin-bottom: 15px;">
-                <select id="calcMode" onchange="toggleInputFields()">
-                    <option value="zeit">Farm-Dauer</option>
-                    <option value="target_skill">Wunsch Skill-XP</option>
-                    <option value="target_lvl">Wunsch Level-XP</option>
-                </select>
+                <select id="calcMode" onchange="toggleInputFields()"></select>
             </div>
 
             <!-- DYNAMISCHES EINGABEFELD (Das JS steuert hier drin Platzhalter und Zeiteinheit) -->
@@ -525,6 +528,22 @@ button:active{
                     <option value="min">Minuten</option>
                     <option value="h">Stunden</option>
                 </select>
+            </div>
+
+            <div id="mana-inputs-container" style="display: none; gap: 10px; margin-top: 15px; margin-bottom: 5px; width: 100%;">
+                <input id="maxMana" type="number" placeholder="Max Mana">
+                <input id="manaRegen" type="number" placeholder="Mana Regen / Sek">
+            </div>
+
+            <div id="trank-inputs-container" style="display: none; flex-direction: column; gap: 8px; margin-top: 10px; margin-bottom: 10px;">
+                <div class="boost-container">
+                    <input type="checkbox" id="useKleinTrank">
+                    <label for="useKleinTrank">Kleine Mana-Tränke nutzen</label>
+                </div>
+                <div class="boost-container">
+                    <input type="checkbox" id="useGrossTrank">
+                    <label for="useGrossTrank">Große Mana-Tränke nutzen/label>
+                </div>
             </div>
 
             <div class="boost-container">
