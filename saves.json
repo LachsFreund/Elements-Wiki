@@ -31,9 +31,6 @@
                 "respawn_sekunden": 1,
                 "frucht": "farming",
             },
-
-
-            
             "iron_ore": {
                 "image": "iron_ore.png",
                 "text": "Ein Erz das in den tieferen Mienen im Dorf gefunden werden kann",
