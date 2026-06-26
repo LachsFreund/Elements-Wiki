@@ -25,7 +25,7 @@
             }
         }
     },
-    "arena" : {
+    "boss" : {
         "category_type": "entity",
         "entries": {
             "melonen golem": {
@@ -44,6 +44,18 @@
             "respawn_sekunden": 71,
             "frucht": "combat"
         }
+        }
+    },
+    "magie" : {
+        "category_type": "item",
+        "entries": {
+            "Attack Orb": {
+            "image": "attack_orb.png",
+            "text": "Ein seltener Orb.",
+            "skill_xp": 625,
+            "mana_kosten": 1250,
+            "frucht": "magic"
+            }
         }
     }
 }
