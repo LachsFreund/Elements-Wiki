@@ -3,12 +3,12 @@
         "category_type": "entity",
         "entries": {
             "höhlenspinne": {
-            "image": "spinne.png",
-            "text": "Ein flinker Kriecher.",
-            "skill_xp": 54,
-            "lvl_xp": 45,
-            "respawn_sekunden": 7.5,
-            "frucht": "combat"
+                "image": "spinne.png",
+                "text": "Ein flinker Kriecher.",
+                "skill_xp": 54,
+                "lvl_xp": 45,
+                "respawn_sekunden": 7.5,
+                "frucht": "combat"
             }
         } 
     },
@@ -16,13 +16,20 @@
         "category_type": "block",
         "entries": {
             "sunflowers": {
-            "image": "sunflower.png",
-            "text": "Eine Blume mit Öl",
-            "skill_xp": 1,
-            "lvl_xp": 1,
-            "respawn_sekunden": 1,
-            "frucht": "farming"
-            }
+                "image": "sunflower.png",
+                "text": "Eine Blume mit Öl",
+                "skill_xp": 1,
+                "lvl_xp": 1,
+                "respawn_sekunden": 1,
+                "frucht": "farming"
+            },
+            "iron_ore": {
+                "image": "iron_ore.png",
+                "text": "Ein Erz das in den tieferen Mienen im Dorf gefunden werden kann",
+                "skill_xp": 3,
+                "lvl_xp": 2,
+                "respawn_sekunden": 1,
+                "frucht": "mining"
         }
     },
     "boss" : {
