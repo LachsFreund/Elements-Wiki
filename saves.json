@@ -29,7 +29,7 @@
                 "skill_xp": 1,
                 "lvl_xp": 1,
                 "respawn_sekunden": 1,
-                "frucht": "farming",
+                "frucht": "farming"
             },
             "iron_ore": {
                 "image": "iron_ore.png",
