@@ -40,7 +40,8 @@
                 "skill_xp": 3,
                 "lvl_xp": 2,
                 "respawn_sekunden": 1,
-                "frucht": "farming"
+                "frucht": "mining"
+            }
         }
     },
     "boss" : {
