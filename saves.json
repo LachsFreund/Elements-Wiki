@@ -121,7 +121,7 @@
             "epische eisen spitzhacke": {
                 "image": "epic_beetroot_hoe.png",
                 "text": "Epische hacke",
-                "fuer_resource": "iron_ore",
+                "fuer_resource": "iron ore",
                 "levelertrag": 7,
                 "dropmenge": 0.5,
                 "rarity": "epic"
