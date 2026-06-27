@@ -3,21 +3,21 @@
         "category_type": "entity",
         "entries": {
             "höhlenspinne": {
-                "image": "spinne.png",
-                "text": "Ein flinker Kriecher.",
-                "skill_xp": 54,
-                "lvl_xp": 45,
-                "respawn_sekunden": 7.5,
-                "frucht": "combat"
+            "image": "spinne.png",
+            "text": "Ein flinker Kriecher.",
+            "skill_xp": 54,
+            "lvl_xp": 45,
+            "respawn_sekunden": 7.5,
+            "frucht": "combat"
             }
         } 
     },
     "resource": {
         "category_type": "block",
         "entries": {
-            "sunflowers": {
+            "sunflower": {
                 "image": "sunflower.png",
-                "text": "Eine Blume mit Öl",
+                "text": "Hier wächst <resource/beetroot>.\\nEine neue Zeile!",
                 "skill_xp": 1,
                 "lvl_xp": 1,
                 "respawn_sekunden": 1,
@@ -28,7 +28,7 @@
                 "text": "Eine rote Rübe",
                 "skill_xp": 1,
                 "lvl_xp": 1,
-                "respawn_sekunden": 1,
+                "respawn_sekunden": 0.2,
                 "frucht": "farming"
             },
             "iron ore": {
@@ -80,6 +80,35 @@
             "skill_xp": 625,
             "mana_kosten": 1250,
             "frucht": "magic"
+            }
+        }
+    },
+    "tools": {
+        "category_type": "item",
+        "entries": {
+            "sunflower hoe": {
+                "image": "sunflower.png",
+                "text": "Standart Sonnenblume Tool",
+                "fuer_resource": "sunflower",
+                "levelertrag": 3,
+                "dropmenge": 1,
+                "rarity": "common"
+            },
+            "sunflower base hoe": {
+                "image": "sunflower.png",
+                "text": "Standart Sonnenblume Tool",
+                "fuer_resource": "sunflower",
+                "levelertrag": 1,
+                "dropmenge": 1,
+                "rarity": "starter"
+            },
+            "epische rote beete hacke": {
+                "image": "epic_beetroot_hoe.png",
+                "text": "Epische hacke",
+                "fuer_resource": "beetroot",
+                "levelertrag": 7,
+                "dropmenge": 0.5,
+                "rarity": "epic"
             }
         }
     }

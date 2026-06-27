@@ -454,6 +454,94 @@ button:active{
     flex: none;
 }
 
+#shop-inputs-container {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    width: 100%;
+}
+
+#shop-inputs-container input {
+    flex: none;
+    width: auto;
+}
+
+/* ==========================================
+   SCROLLBAR NUR FÜR DEN RECHNER (ECHTE 100% BREITE)
+========================================== */
+#rechner.page.active {
+    display: block !important; 
+    height: calc(100vh - 80px); 
+    overflow: hidden;
+}
+
+#rechner .page-scroll-content {
+    height: 100%;
+    overflow-y: auto;            
+    display: flex;               
+    flex-direction: column;      
+    align-items: stretch;        /* Streckt alles auf die maximale Breite */
+    justify-content: flex-start; 
+    gap: 20px;                   
+    padding: 20px;               /* Schafft einen sauberen, gleichmäßigen Rand links & rechts */
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* FIX: Hebt alle alten Breitenbegrenzungen auf und erzwingt die volle Breite im Rechner */
+#rechner .card {
+    width: 100% !important;
+    max-width: 100% !important;  /* Sprengt die Begrenzung auf die volle Bildschirmbreite */
+    margin: 0;                   /* Richtet die Cards linksbündig am Padding aus */
+    box-sizing: border-box;
+}
+
+/* Scrollbar Design – Exakt wie dein Wiki aufgebaut */
+#rechner .page-scroll-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+#rechner .page-scroll-content::-webkit-scrollbar-track {
+    background: var(--black);
+    border-radius: 4px;
+}
+
+#rechner .page-scroll-content::-webkit-scrollbar-thumb {
+    background: var(--purple);
+    border-radius: 4px;
+}
+
+#rechner .page-scroll-content::-webkit-scrollbar-thumb:hover {
+    background: var(--white);
+}
+
+.wiki-sub-header {
+    font-size: 1.1em;
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-left: 3px solid var(--purple, #7d5fff);
+    padding-left: 10px;
+}
+
+.wiki-inline-link {
+    color: var(--purple, #7d5fff);
+    font-weight: bold;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.1s ease;
+    display: inline-block;
+}
+
+.wiki-inline-link:hover {
+    color: var(--white, #fff); /* Wird strahlend weiß beim Hovern */
+}
+
+.wiki-inline-link:active {
+    transform: scale(0.95);    /* Drückt sich beim Klicken minimal zusammen */
+}
+
 </style>
 </head>
 
@@ -497,31 +585,36 @@ button:active{
 
     </div>
 
-    <!-- RECHNER -->
+    <!-- RECHNER SEITE -->
     <div id="rechner" class="page">
+        <div class="page-scroll-content">
 
+        <!-- Taschenrechner-Card -->
         <div class="card">
             <h2>Calculator</h2>
             <input id="display" class="display" type="text" placeholder="0">
         </div>
 
+        <!-- Farm-Calculator-Card -->
         <div class="card">
             <h2>Farm Calculator</h2>
 
             <br>
 
-            <!-- Haupt-Auswahl (onchange korrigiert, damit sich Dropdowns UND Eingabefelder aktualisieren) -->
-            <select id="typeSelect" onchange="updateMobList(); toggleInputFields();"></select>
-            <select id="mobSelect"></select>
+            <!-- Haupt-Auswahl (onchange korrigiert, damit Werkzeuge und Felder laden) -->
+            <select id="typeSelect" onchange="updateMobList(); toggleInputFields(true);"></select>
+            <select id="mobSelect" onchange="updateToolList();"></select>
 
             <br><br>
 
-            <!-- NEU: Modus-Auswahl für Mobs/Resources (Wird bei Arena automatisch ausgeblendet) -->
+            <div id="tool-select-container" style="display: none; margin-bottom: 15px;">
+                <select id="toolSelect"></select>
+            </div>
+
             <div id="calc-mode-container" style="margin-bottom: 15px;">
                 <select id="calcMode" onchange="toggleInputFields()"></select>
             </div>
 
-            <!-- DYNAMISCHES EINGABEFELD (Das JS steuert hier drin Platzhalter und Zeiteinheit) -->
             <div id="dynamic-inputs" style="display: inline-block; width: 100%;">
                 <input id="amount" type="number" placeholder="Zeit">
                 <select id="unit">
@@ -542,8 +635,13 @@ button:active{
                 </div>
                 <div class="boost-container">
                     <input type="checkbox" id="useGrossTrank">
-                    <label for="useGrossTrank">Große Mana-Tränke nutzen/label>
+                    <label for="useGrossTrank">Große Mana-Tränke nutzen</label>
                 </div>
+            </div>
+
+            <div id="shop-inputs-container" style="margin-bottom: 15px;">
+                <input id="shopLvlErtrag" type="number" step="any" placeholder="Levelertrag" value="0">
+                <input id="shopDropmenge" type="number" step="any" placeholder="Max Dropmenge" value="0">
             </div>
 
             <div class="boost-container">
@@ -557,9 +655,16 @@ button:active{
 
             <button class="calc-action" onclick="calculateFarm()">Berechnen</button>
 
-        <div id="result"></div>
+            <div id="result-container" style="margin-top: 20px; line-height: 1.6;">
+                <div id="result" style="font-weight: bold; color: var(--white);"></div>
+                <div id="result-ertrag" style="font-weight: bold; color: var(--purple, #7d5fff); margin-top: 5px;"></div>
+            </div>
+
+        </div>
 
     </div>
+
+</div>
 
 </div>
 

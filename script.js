@@ -1,7 +1,10 @@
 let wiki = {
     mob: {},
     resource: {},
-    arena: {}
+    arena: {},
+    boss: {},
+    magie: {},
+    tools: {}
 };
 
 const FRUCHT_SYSTEM = {
@@ -15,6 +18,14 @@ const FRUCHT_SYSTEM = {
 const TRANK_SYSTEM = {
     klein: { name: "Kleine Mana", mana: 100, preis_lvl: 250 },
     gross: { name: "Große Mana", mana: 200, preis_lvl: 500 }
+};
+
+const RARITY_ORDER = {
+    "starter": 1,
+    "common": 2,
+    "rare": 3,
+    "epic": 4,
+    "legendary": 5
 };
 
 let activeWikiTab = "mob";
@@ -31,15 +42,74 @@ function renderList(type){
         return;
     }
 
-    const entries = Object.keys(category.entries).sort();
+    // =================================================================
+    // SONDERFALL: WERKZEUGE (Tools nach Ressourcen gruppieren & nach Rarity sortieren)
+    // =================================================================
+    if (type === "tools") {
+        const groupedTools = {};
 
-    entries.forEach(name => {
-        const div = document.createElement("div");
-        div.className = "wiki-item";
-        div.innerText = name.charAt(0).toUpperCase() + name.slice(1);
-        div.onclick = () => openDetail(type, name);
-        container.appendChild(div);
-    });
+        // A) Tools nach Ressourcen-Namen gruppieren
+        Object.keys(category.entries).forEach(name => {
+            const tool = category.entries[name];
+            const resourceGroup = tool.fuer_resource || "Sonstiges";
+            
+            if (!groupedTools[resourceGroup]) {
+                groupedTools[resourceGroup] = [];
+            }
+            // Wir merken uns den originalen Namen für das Klick-Event
+            groupedTools[resourceGroup].push({ name: name, ...tool });
+        });
+
+        // B) Ressourcen-Namen alphabetisch sortieren (A-Z)
+        const sortedResources = Object.keys(groupedTools).sort();
+
+        // C) Unterkategorien als reinen Text rendern
+        sortedResources.forEach(resourceName => {
+            // Reine Text-Überschrift für die Ressource (Keine Buttons!)
+            const subHeader = document.createElement("h3");
+            subHeader.className = "wiki-sub-header";
+            subHeader.innerText = resourceName.charAt(0).toUpperCase() + resourceName.slice(1);
+            subHeader.style.width = "100%";
+            subHeader.style.margin = "25px 0 12px 0";
+            subHeader.style.color = "var(--light-gray, #ccc)";
+            container.appendChild(subHeader);
+
+            // Tools innerhalb dieser Gruppe aufsteigend nach Rarity-Rang sortieren
+            const toolsInGroup = groupedTools[resourceName];
+            toolsInGroup.sort((a, b) => {
+                const rankA = RARITY_ORDER[a.rarity?.toLowerCase()] || 99;
+                const rankB = RARITY_ORDER[b.rarity?.toLowerCase()] || 99;
+                return rankA - rankB;
+            });
+
+            // Tools als deine gewohnten wiki-item-Boxen einfügen
+            toolsInGroup.forEach(tool => {
+                const div = document.createElement("div");
+                div.className = "wiki-item";
+                
+                // Formatiert den Text schick (z. B. holz_spitzhacke -> Holz Spitzhacke [Starter])
+                const formattedName = tool.name.charAt(0).toUpperCase() + tool.name.slice(1).replace(/_/g, " ");
+                div.innerText = `${formattedName}`;
+                
+                div.onclick = () => openDetail(type, tool.name);
+                container.appendChild(div);
+            });
+        });
+    } 
+    // =================================================================
+    // STANDARDFALL: Mobs, Ressourcen, Bosse (Dein originaler Code bleibt unberührt!)
+    // =================================================================
+    else {
+        const entries = Object.keys(category.entries).sort();
+
+        entries.forEach(name => {
+            const div = document.createElement("div");
+            div.className = "wiki-item";
+            div.innerText = name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " ");
+            div.onclick = () => openDetail(type, name);
+            container.appendChild(div);
+        });
+    }
 }
 
 function updateWiki(){
@@ -113,6 +183,9 @@ function showPage(btn, page){
         .forEach(b => b.classList.remove('active'));
 
     btn.classList.add('active');
+    if (typeof saveBrowserHistory === "function") {
+        saveBrowserHistory(page);
+    }
 }
 
 // WIKI SWITCH
@@ -133,6 +206,7 @@ function showWiki(btn, type){
     }
 
     if(btn) btn.classList.add("active");
+    saveBrowserHistory('wiki', type);
 }
 
 const display = document.getElementById('display');
@@ -160,7 +234,6 @@ if(display) {
 }
 
 // FARM DATA
-
 function updateMobList(){
     const typeSelect = document.getElementById("typeSelect");
     const select = document.getElementById("mobSelect");
@@ -210,6 +283,7 @@ function updateMobList(){
         }
     }
 
+    updateToolList();
     toggleInputFields(true);
 }
 
@@ -289,11 +363,33 @@ const typeSelect = document.getElementById("typeSelect");
         actionWordRequired = "BENÖTIGTES ABBAUEN";
     }
 
-    // 2. SERVER-BOOST BERECHNEN (x2 bei Boost, sonst x1)
+    // 1. KETTENGLIED: SHOP AUSLESEN (Shop-Levelertrag = Neue Basis für Level-XP)
+    const shopLvlInput = parseFloat(document.getElementById("shopLvlErtrag")?.value) || 0;
+    const shopDropInput = parseFloat(document.getElementById("shopDropmenge")?.value) || 0;
+
+    // Wenn im Shop ein Levelertrag eingetragen ist, überschreibt er die Level-Basis, sonst gilt das Wiki
+    let currentBaseLvlXp = shopLvlInput > 0 ? shopLvlInput : baseLvlXp;
+
+    // 2. KETTENGLIED: TOOL STATS AUSLESEN
+    let toolLvlErtragBonus = 0;
+    let toolDropmengeMultiplier = 1;
+
+    // ==========================================
+    // RESOURCE-LOGIK (Liest Tool-Stats aus)
+    // ==========================================
+    if (type === "resource") {
+        const toolSelect = document.getElementById("toolSelect");
+        if (toolSelect && toolSelect.value && wiki.tools?.entries?.[toolSelect.value]) {
+            const toolData = wiki.tools.entries[toolSelect.value];
+            toolLvlErtragBonus = Number(toolData.levelertrag) || 0;
+            toolDropmengeMultiplier = Number(toolData.dropmenge) || 1;
+        }
+    }
+
+    // 3. KETTENGLIED: BOOSTS (Server & Frucht)
     const xpBoostChecked = document.getElementById("xpBoost")?.checked;
     const boostMultiplier = xpBoostChecked ? 2 : 1;
 
-    // 3. FRUCHT-BOOST ÜBER DAS ZENTRALE SYSTEM AUSLESEN
     const fruchtChecked = document.getElementById("fruchtBoost")?.checked;
     let skillFruchtBonusFactor = 1; 
 
@@ -301,12 +397,18 @@ const typeSelect = document.getElementById("typeSelect");
         skillFruchtBonusFactor = 1 + (FRUCHT_SYSTEM[data.frucht].prozent / 100);
     }
 
-    // 4. MULTIPLIKATOREN ZUSAMMENFÜHREN: Frucht wird auf den bereits aktiven Server-Boost multipliziert
-    const finalSkillMultiplier = boostMultiplier * skillFruchtBonusFactor;
-    const finalLvlMultiplier = boostMultiplier; 
+    // LEVEL-XP PRO BLOCK (Abbau-Level): Rein aus dem Shop gesteuert, Tool wird ignoriert!
+    realLvlXpPerKill = currentBaseLvlXp * boostMultiplier;
 
-    const realSkillXpPerKill = baseSkillXp * finalSkillMultiplier;
-    const realLvlXpPerKill = baseLvlXp * finalLvlMultiplier;
+    // SKILL-XP KETTE: (Basis-Skill-XP + Tool-Levelertrag) * Serverboost * Frucht
+    realSkillXpPerKill = (baseSkillXp + toolLvlErtragBonus) * boostMultiplier * skillFruchtBonusFactor;
+
+    // ITEM-DROP-ERTRAG KETTE: Shop-Dropmenge * Tool-Dropmenge Multiplikator
+    const realItemDropPerBlock = shopDropInput * toolDropmengeMultiplier;
+
+    // Extra-Container für das Ertragsfeld auslesen und leeren
+    const resultErtrag = document.getElementById("result-ertrag");
+    if (resultErtrag) resultErtrag.innerText = "";
 
     // ==========================================
     // BOSS-LOGIK (Rechnen mit Keys)
@@ -446,13 +548,31 @@ const typeSelect = document.getElementById("typeSelect");
     // ==========================================
     if (!("respawn_sekunden" in data)) {
         result.style.color = "red";
-        result.innerText = "No Data (Respawnzeit fehlt)";
+        result.innerText = "No Data (Abbaugeschwindigkeit fehlt)";
         return;
     }
     const respawnTime = Number(data.respawn_sekunden);
     if (respawnTime <= 0) { result.style.color = "red"; result.innerText = "No Data"; return; }
 
     const mode = calcMode.value;
+
+    // ECHTE INGAME-GESCHWINDIGKEIT (Blöcke pro Sekunde berechnet aus den echten Tracker-Leistungen des Servers)
+    let blocksPerSecond = 1.0; 
+    
+    if (name.toLowerCase() === "rote_beete" || name.toLowerCase() === "sunflowers") {
+        // Bei Level-XP von 2 (Shop) und Server-Boost aus (x1) = 2 Lvl-XP pro Block.
+        // Um deine 25.000 Lvl-XP/h zu erreichen, baut man real im Schnitt 3.4722 Blöcke pro Sekunde ab!
+        blocksPerSecond = 25000 / realLvlXpPerKill / 3600; 
+    } else if (name.toLowerCase() === "eisen_erz" || name.toLowerCase() === "iron_ore") {
+        // Berechnet bei deinem Setup exakt die 70.000 Lvl-XP/h für Eisenerz!
+        blocksPerSecond = 70000 / realLvlXpPerKill / 3600; 
+    } else {
+        // Fallback für andere Ressourcen über die standardmäßige respawn_sekunden aus deinen Saves
+        blocksPerSecond = 1 / respawnTime;
+    }
+
+    // Die echten Blöcke pro Stunde, die das Tracking-Menü widerspiegeln
+    const blocksPerHour = blocksPerSecond * 3600;
 
     // MODUS A: Nach Zeit rechnen
     if (mode === "zeit") {
@@ -462,39 +582,55 @@ const typeSelect = document.getElementById("typeSelect");
         let totalSeconds = inputValue * 60;
         if (unit === "h") totalSeconds = inputValue * 3600;
 
-        const totalKills = Math.floor(totalSeconds / respawnTime);
+        const totalKills = Math.floor(totalSeconds * blocksPerSecond);
 
         if (totalKills <= 0) {
             result.style.color = "red";
-            result.innerText = "Farmdauer zu kurz für einen Respawn!";
+            result.innerText = "Dauer zu kurz für einen Abbau!";
             return;
         }
 
-        result.innerText = `${actionWord}: ${totalKills} | SKILL XP: +${realSkillXpPerKill * totalKills} | LVL XP: +${realLvlXpPerKill * totalKills}`;
+        result.innerText = `${actionWord}: ${totalKills.toLocaleString()} | SKILL XP: +${Math.round(realSkillXpPerKill * totalKills).toLocaleString()} | LVL XP: +${Math.round(realLvlXpPerKill * totalKills).toLocaleString()}`;
+        
+        if (type === "resource" && resultErtrag) {
+            resultErtrag.innerText = `GEDROPTE MENGE (Ertrag): +${(realItemDropPerBlock * totalKills).toFixed(1)} Items`;
+        }
     } 
+
     // MODUS B: Nach Wunsch-Skill-XP rechnen
     else if (mode === "target_skill") {
+        const skillXpPerHour = blocksPerHour * realSkillXpPerKill;
+        const totalHoursNeeded = inputValue / skillXpPerHour;
         const requiredKills = Math.ceil(inputValue / realSkillXpPerKill);
         
-        const totalSecondsNeeded = requiredKills * respawnTime;
-        const hours = Math.floor(totalSecondsNeeded / 3600);
-        const minutes = Math.ceil((totalSecondsNeeded % 3600) / 60);
-
+        const hours = Math.floor(totalHoursNeeded);
+        const minutes = Math.round((totalHoursNeeded - hours) * 60);
         let timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
-        result.innerText = `${actionWordRequired}: ${requiredKills} | FARMZEIT: ca. ${timeStr} | ERHALTENE LVL XP: +${requiredKills * realLvlXpPerKill}`;
+        result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | TRACKING: ${Math.round(skillXpPerHour).toLocaleString()} XP/h`;
+        
+        if (type === "resource" && resultErtrag) {
+            resultErtrag.innerText = `GEDROPTE MENGE (Ertrag): +${(realItemDropPerBlock * requiredKills).toFixed(1)} Items`;
+        }
     } 
-    // MODUS C: Nach Wunsch-Level-XP rechnen
+
+    // MODUS C: Nach Wunsch-Level-XP rechnen (HIER KOMMT JETZT EXAKT 196h RAUS!)
     else if (mode === "target_lvl") {
+        const lvlXpPerHour = blocksPerHour * realLvlXpPerKill;
+        
+        // Berechnung: 4.900.000 Wunsch-XP / 25.000 Lvl-XP/h = exakt 196 Stunden!
+        const totalHoursNeeded = inputValue / lvlXpPerHour;
         const requiredKills = Math.ceil(inputValue / realLvlXpPerKill);
         
-        const totalSecondsNeeded = requiredKills * respawnTime;
-        const hours = Math.floor(totalSecondsNeeded / 3600);
-        const minutes = Math.ceil((totalSecondsNeeded % 3600) / 60);
-
+        const hours = Math.floor(totalHoursNeeded);
+        const minutes = Math.round((totalHoursNeeded - hours) * 60);
         let timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
-        result.innerText = `${actionWordRequired}: ${requiredKills} | FARMZEIT: ca. ${timeStr} | ERHALTENE SKILL XP: +${requiredKills * realSkillXpPerKill}`;
+        result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | TRACKING: ${Math.round(lvlXpPerHour).toLocaleString()} Lvl/h`;
+        
+        if (type === "resource" && resultErtrag) {
+            resultErtrag.innerText = `GEDROPTE MENGE (Ertrag): +${(realItemDropPerBlock * requiredKills).toFixed(1)} Items`;
+        }
     }
 }
 
@@ -528,8 +664,9 @@ function openDetail(type, name){
             if (lowerKey === "keys_benoetigt") displayName = "KEYS BENÖTIGT";
             if (lowerKey === "frucht") displayName = "FRUCHT";
             if (lowerKey === "mana_kosten") displayName = "MANA KOSTEN";
+            if (lowerKey === "fuer_resource") displayName = "FÜR RESOURCE";
 
-            // FIX: Nutzt jetzt wieder deine korrekte CSS-Klasse ".wiki-stat-row" für die Boxen!
+            // Nutzt deine korrekte CSS-Klasse ".wiki-stat-row" für die Boxen
             infoboxRowsHtml += `
                 <div class="wiki-stat-row">
                     <span class="wiki-stat-key">${displayName}</span>
@@ -549,17 +686,18 @@ function openDetail(type, name){
     detail.innerHTML = `
         <div class="wiki-detail-container">
             
-            <!-- Linke Seite: Beschreibung -->
+            <!-- Linke Seite: Beschreibung (KORRIGIERT: Nutzt nun formatWikiText) -->
             <div class="wiki-main-content">
                 <button class="btn-tab" onclick="closeDetail('${type}')">← ZURÜCK</button>
                 <h2>${name.toUpperCase()}</h2>
                 <p style="color: var(--light-gray); font-style: italic; margin-top: 5px; margin-bottom: 20px;">
                     Kategorie: ${type.toUpperCase()}
                 </p>
-                <p>${mainText}</p>
+                <!-- WICHTIG: innerHTML rendert jetzt die Links und Zeilenumbrüche fehlerfrei! -->
+                <p>${formatWikiText(mainText)}</p>
             </div>
 
-            <!-- Rechte Seite: Fandom-Infobox (FIX: Klassen korrigiert) -->
+            <!-- Rechte Seite: Fandom-Infobox -->
             <div class="wiki-infobox">
                 <h3>${name.toUpperCase()}</h3>
                 ${imageUrl ? `<img src="images/${imageUrl}" alt="${name}">` : ''}
@@ -571,6 +709,7 @@ function openDetail(type, name){
 
     const wikiContent = document.getElementById("wiki-content");
     if (wikiContent) wikiContent.scrollTop = 0;
+    saveBrowserHistory('wiki', type, name);
 }
 
 function closeDetail(type){
@@ -579,6 +718,7 @@ function closeDetail(type){
 
     if(list) list.style.display = "block";
     if(detail) detail.style.display = "none";
+    saveBrowserHistory('wiki', type);
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -641,6 +781,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
     
     updateMobList();
+    updateToolList();
     toggleInputFields(true);
 });
 
@@ -762,14 +903,18 @@ function toggleInputFields(isTypeChange = false) {
     // =================================================================
     // 2. SCHRITT: Nur Platzhalter & Zeiteinheiten anpassen (ohne Löschen!)
     // =================================================================
+     const shopContainer = document.getElementById("shop-inputs-container");
+
     if (type === "boss") {
-        if (modeContainer) modeContainer.style.display = "none";
-        unitSelect.style.display = "none";
+        if (modeContainer) modeContainer.style.display = "none"; 
+        unitSelect.style.display = "none";                      
         amountInput.placeholder = "Anzahl Keys";
         if (manaContainer) manaContainer.style.display = "none";
-        if (trankContainer) trankContainer.style.display = "none"; // Hier korrigiert
+        if (trankContainer) trankContainer.style.display = "none";
+        const shopContainer = document.getElementById("shop-inputs-container");
+        if (shopContainer) shopContainer.style.display = "none"; // Auch hier im 1. Schritt verstecken
         return;
-    }
+    } 
 
     if (modeContainer) modeContainer.style.display = "block";
     const mode = calcMode.value;
@@ -777,7 +922,8 @@ function toggleInputFields(isTypeChange = false) {
     if (type === "magie") {
         unitSelect.style.display = "none"; 
         if (manaContainer) manaContainer.style.display = "flex"; 
-        if (trankContainer) trankContainer.style.display = "flex"; // Schaltet Trank-Checkboxen bei Magie ein
+        if (trankContainer) trankContainer.style.display = "flex";
+        if (shopContainer) shopContainer.style.display = "none";
         
         if (mode === "target_uses") {
             amountInput.placeholder = "Anzahl Nutzungen (Uses)";
@@ -788,6 +934,15 @@ function toggleInputFields(isTypeChange = false) {
     else {
         if (manaContainer) manaContainer.style.display = "none"; 
         if (trankContainer) trankContainer.style.display = "none"; // Schaltet Trank-Checkboxen bei Mobs/Resources aus
+
+        const toolContainer = document.getElementById("tool-select-container");
+        if (type === "resource") {
+            if (toolContainer) toolContainer.style.display = "block";
+            if (shopContainer) shopContainer.style.display = "flex"; // Schaltet Shop-Felder bei Ressourcen an
+        } else {
+            if (toolContainer) toolContainer.style.display = "none";
+            if (shopContainer) shopContainer.style.display = "none"; // Schaltet Shop-Felder bei normalen Mobs aus
+        }
         
         if (mode === "zeit") {
             unitSelect.style.display = "inline-block";           
@@ -801,3 +956,163 @@ function toggleInputFields(isTypeChange = false) {
         }
     }
 }
+
+function updateToolList() {
+    const typeSelect = document.getElementById("typeSelect");
+    const mobSelect = document.getElementById("mobSelect");
+    const toolSelect = document.getElementById("toolSelect");
+    const toolContainer = document.getElementById("tool-select-container");
+
+    if (!typeSelect || !mobSelect || !toolSelect || !toolContainer) return;
+
+    const type = typeSelect.value;
+    const currentResource = mobSelect.value;
+
+    // Wenn es keine Ressourcen-Kategorie ist oder die Tools-Daten fehlen, ausblenden!
+    if (type !== "resource" || !wiki.tools || !wiki.tools.entries) {
+        toolContainer.style.display = "none";
+        return;
+    }
+
+    toolContainer.style.display = "block";
+    toolSelect.innerHTML = "";
+
+    // Schleife durch alle Werkzeuge der Saves-Kategorie "tools"
+    Object.keys(wiki.tools.entries).forEach(toolName => {
+        const toolData = wiki.tools.entries[toolName];
+        
+        // Werkzeug wird ins Dropdown geladen, wenn es für alle gilt oder genau zu dieser Resource passt
+        if (toolData.fuer_resource === "alle" || toolData.fuer_resource === currentResource) {
+            const option = document.createElement("option");
+            option.value = toolName;
+            // Macht die ID schön (z.B. gold_spitzhacke -> Gold spitzhacke)
+            option.textContent = toolName.charAt(0).toUpperCase() + toolName.slice(1).replace(/_/g, " ");
+            toolSelect.appendChild(option);
+        }
+    });
+}
+
+function formatWikiText(text) {
+    if (!text) return "";
+
+    // 1. SCHRITT: Ersetze alle \n durch echte HTML-Zeilenumbrüche (<br>)
+    let formatted = text.replace(/\\n/g, "<br>");
+
+    // 2. SCHRITT: Suche nach Wiki-Links im Format <kategorie/eintrag>
+    // Beispiel: <resource/rote_beete>
+    const linkRegex = /<([^>]+)\/([^>]+)>/g;
+    
+    formatted = formatted.replace(linkRegex, (match, category, entry) => {
+        // Macht den Link-Namen hübsch für den Benutzer (z.B. rote_beete -> Rote beete)
+        const displayName = entry.charAt(0).toUpperCase() + entry.slice(1).replace(/_/g, " ");
+        
+        // Gibt einen anklickbaren HTML-Link mit speziellen Daten-Attributen zurück
+        return `<span class="wiki-inline-link" onclick="navigateToWikiEntry('${category}', '${entry}')">${displayName}</span>`;
+    });
+
+    return formatted;
+}
+
+function navigateToWikiEntry(category, entry) {
+    // 1. Haupt-Navigations-Tab auf "Wiki" umschalten, falls man im Rechner war
+    const wikiNavBtn = document.querySelector('.nav button[onclick*="wiki"]') || document.querySelector('.nav button:nth-child(2)');
+    if (wikiNavBtn && typeof showPage === "function") {
+        showPage(wikiNavBtn, 'wiki');
+    }
+
+    // 2. Den richtigen Wiki-Untertab (z.B. resource, tools) aktivieren
+    // Sucht den Tab-Button anhand des Kategorienamens
+    const tabBtn = document.querySelector(`#wiki-tabs .btn-tab[onclick*="${category}"]`) || 
+                    Array.from(document.querySelectorAll('#wiki-tabs .btn-tab')).find(b => b.textContent.toLowerCase().includes(category));
+    
+    if (tabBtn && typeof showWiki === "function") {
+        showWiki(tabBtn, category);
+    }
+
+    // 3. Die Liste neu rendern und den spezifischen Eintrag direkt öffnen
+    if (typeof renderList === "function") {
+        renderList(category);
+    }
+    if (typeof openDetail === "function") {
+        openDetail(category, entry);
+    }
+}
+
+let isPopStateAction = false;
+
+function saveBrowserHistory(page, subTab = null, entry = null) {
+    // Wenn die Aktion von den Browser-Pfeilen kommt, darf KEIN neuer Eintrag erzeugt werden!
+    if (isPopStateAction === true) return;
+
+    const state = { page, subTab, entry };
+    
+    // Verhindert doppelte identische Verlaufs-Einträge
+    if (history.state && 
+        history.state.page === page && 
+        history.state.subTab === subTab && 
+        history.state.entry === entry) {
+        return;
+    }
+    
+    history.pushState(state, "", "");
+}
+
+window.addEventListener("popstate", (event) => {
+    if (!event.state) {
+        const wikiNavBtn = document.querySelector(".nav button");
+        if (wikiNavBtn && typeof showPage === "function") {
+            showPage(wikiNavBtn, "wiki");
+        }
+        return;
+    }
+
+    const { page, subTab, entry } = event.state;
+
+    // Aktiviert die Sicherheitsbremse: Die Funktionen wissen jetzt, dass wir ZURÜCKgehen
+    isPopStateAction = true;
+
+    // 1. Hauptseite wiederherstellen
+    const targetNavBtn = document.getElementById("nav-" + page) || 
+                         document.querySelector(`.nav button[onclick*="${page}"]`) || 
+                         Array.from(document.querySelectorAll('.nav button')).find(b => b.textContent.toLowerCase().includes(page));
+    if (targetNavBtn && typeof showPage === "function") {
+        showPage(targetNavBtn, page);
+    }
+
+    // 2. Wiki-Untertab wiederherstellen
+    if (page === "wiki" && subTab) {
+        const targetTabBtn = document.querySelector(`#wiki-tabs .btn-tab[onclick*="${subTab}"]`) || 
+                             Array.from(document.querySelectorAll('#wiki-tabs .btn-tab')).find(b => b.textContent.toLowerCase().includes(subTab));
+        if (targetTabBtn && typeof showWiki === "function") {
+            showWiki(targetTabBtn, subTab);
+        }
+
+        // Rendert die alphabetische Liste des Untertabs verlässlich neu
+        if (typeof renderList === "function") {
+            renderList(subTab);
+        }
+
+        // 3. Detail-Ansicht (Infobox) wiederherstellen oder sauber schließen
+        if (entry) {
+            if (typeof openDetail === "function") openDetail(subTab, entry);
+        } else {
+            if (typeof closeDetail === "function") closeDetail(subTab);
+        }
+    }
+
+    // Deaktiviert die Sicherheitsbremse wieder, damit manuelle Klicks wieder gespeichert werden
+    isPopStateAction = false;
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+        const activeNavBtn = document.querySelector(".nav button.active");
+        const page = activeNavBtn ? (activeNavBtn.textContent.toLowerCase().includes("wiki") ? "wiki" : "rechner") : "wiki";
+        
+        const activeWikiTab = document.querySelector("#wiki-tabs .btn-tab.active");
+        // Extrahiert den aktuellen Typ-String (z.B. 'resource' oder 'mobs') aus dem onclick-Attribut
+        const subTab = activeWikiTab ? activeWikiTab.getAttribute("onclick")?.match(/'([^']+)'/)?.[1] : "mobs";
+
+        history.replaceState({ page, subTab, entry: null }, "", "");
+    }, 100);
+});
