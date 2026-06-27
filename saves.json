@@ -66,8 +66,8 @@
                 "skill_xp": 1000,
                 "lvl_xp": 1000,
                 "respawn_sekunden": 60,
-                "frucht": "combat"
-                "hp": 100,
+                "frucht": "combat",
+                "hp": 100
             }
         }
     },
