@@ -63,7 +63,7 @@
             "eisengolem": {
                 "image": "eisengolem.png",
                 "text": "Boss der mit Prozessor in der Mine beschwört wird",
-                "skill_xp": 4000,
+                "skill_xp": 2000,
                 "lvl_xp": 500,
                 "respawn_sekunden": 60,
                 "frucht": "combat",
