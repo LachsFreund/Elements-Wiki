@@ -45,20 +45,20 @@
         "category_type": "entity",
         "entries": {
             "melonen golem": {
-            "image": "golem.png",
-            "text": "Ein seltener Boss-Gegner.",
-            "skill_xp": 1000,
-            "lvl_xp": 500,
-            "respawn_sekunden": 13,
-            "frucht": "combat"
+                "image": "golem.png",
+                "text": "Ein seltener Boss-Gegner.",
+                "skill_xp": 2000,
+                "lvl_xp": 500,
+                "respawn_sekunden": 13,
+                "frucht": "combat"
             },
             "mutierte ziege": {
-            "image": "ziege.png",
-            "text": "Ziege boss der von Rüben Spawnt",
-            "skill_xp": 2000,
-            "lvl_xp": 500,
-            "respawn_sekunden": 71,
-            "frucht": "combat"
+                "image": "ziege.png",
+                "text": "Ziege boss der von Rüben Spawnt",
+                "skill_xp": 2000,
+                "lvl_xp": 500,
+                "respawn_sekunden": 71,
+                "frucht": "combat"
             },
             "eisengolem": {
                 "image": "eisengolem.png",
@@ -68,6 +68,15 @@
                 "respawn_sekunden": 60,
                 "frucht": "combat",
                 "hp": 100
+            },
+            "sonnenblumenbienen": {
+                "image": "bee.png",
+                "text": "Bienen Boss der von <item/pollenstaub> beschworen wird.",
+                "skill_xp": 2000,
+                "lvl_xp": 500,
+                "respawn_sekunden": 60,
+                "frucht": "combat",
+                "hp": 300
             }
         }
     },

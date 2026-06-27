@@ -607,8 +607,11 @@ const typeSelect = document.getElementById("typeSelect");
         const minutes = Math.round((totalHoursNeeded - hours) * 60);
         let timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
-        result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | TRACKING: ${Math.round(skillXpPerHour).toLocaleString()} XP/h`;
-        
+        // Berechnet die gesamten Level-XP, die man in dieser Zeit für die Wunsch-Skill-XP bekomm
+        const totalLvlXpEarned = requiredKills * realLvlXpPerKill;
+
+        result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | ERHALTENE LVL XP: +${Math.round(totalLvlXpEarned).toLocaleString()}`;
+
         if (type === "resource" && resultErtrag) {
             resultErtrag.innerText = `GEDROPTE MENGE (Ertrag): +${(realItemDropPerBlock * requiredKills).toFixed(1)} Items`;
         }
@@ -626,8 +629,11 @@ const typeSelect = document.getElementById("typeSelect");
         const minutes = Math.round((totalHoursNeeded - hours) * 60);
         let timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
-        result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | TRACKING: ${Math.round(lvlXpPerHour).toLocaleString()} Lvl/h`;
+        const totalSkillXpEarned = requiredKills * realSkillXpPerKill;
+
+        result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | ERHALTENE SKILL XP: +${Math.round(totalSkillXpEarned).toLocaleString()}`;
         
+
         if (type === "resource" && resultErtrag) {
             resultErtrag.innerText = `GEDROPTE MENGE (Ertrag): +${(realItemDropPerBlock * requiredKills).toFixed(1)} Items`;
         }
@@ -839,6 +845,8 @@ function createTypeSelect(){
     select.innerHTML = "";
 
     Object.keys(wiki).forEach(type => {
+        if (type.toLowerCase() === "tools") return;
+
         const option = document.createElement("option");
         option.value = type;
         option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
