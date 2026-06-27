@@ -28,7 +28,7 @@
                 "text": "Eine rote Rübe",
                 "skill_xp": 1,
                 "lvl_xp": 1,
-                "respawn_sekunden": 0.1,
+                "respawn_sekunden": 0.05,
                 "frucht": "farming"
             },
             "iron ore": {
