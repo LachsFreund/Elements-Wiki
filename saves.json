@@ -36,7 +36,7 @@
                 "text": "Ein Erz das in den tieferen Mienen im Dorf gefunden werden kann",
                 "skill_xp": 3,
                 "lvl_xp": 2,
-                "respawn_sekunden": 0.5,
+                "respawn_sekunden": 0.086,
                 "frucht": "mining"
             }
         }
