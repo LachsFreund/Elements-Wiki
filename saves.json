@@ -86,7 +86,7 @@
     "tools": {
         "category_type": "item",
         "entries": {
-            sonnenblumen hacke": {
+            "sonnenblumen hacke": {
                 "image": "sunflower.png",
                 "text": "Standart Sonnenblume Tool",
                 "fuer_resource": "sunflower",
