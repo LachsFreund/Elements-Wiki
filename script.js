@@ -662,8 +662,8 @@ function calculateFarm(){
             let potionText = "";
             if (isUsingPotions) {
                 potionText = `| TRÄNKE: `;
-                if (sim.gross > 0) potionText += `Große: ${sim.gross} `;
-                if (sim.klein > 0) potionText += `Kleine: ${sim.klein} `;
+                if (sim.gross > 0) potionText += `${sim.gross} Große`;
+                if (sim.klein > 0) potionText += `${sim.klein} Kleine`;
                 if (sim.gross === 0 && sim.klein === 0) potionText += `0x `;
                 potionText += `| KOSTEN: ${sim.lvlCost} Level`;
             } else {
@@ -1136,7 +1136,7 @@ function toggleInputFields(isTypeChange = false) {
         } else if (mode === "target_skill_lvl") {
             // FIX: Platzhalter für das Ziel-Level
             unitSelect.style.display = "none";
-            amountInput.placeholder = "Wunsch Skill-Level (Ziel)";
+            amountInput.placeholder = "Wunsch Skill-Level";
         }
     }
 }
