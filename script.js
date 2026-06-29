@@ -28,6 +28,111 @@ const RARITY_ORDER = {
     "legendary": 5
 };
 
+const LEVEL_XP_TABELLE = {
+    1: 0,
+    2: 200,
+    3: 300,
+    4: 450,
+    5: 600,
+    6: 750,
+    7: 1000,
+    8: 1250,
+    9: 1500,
+    10: 1750,
+    11: 2000,
+    12: 2500,
+    13: 3000,
+    14: 3500,
+    15: 4000,
+    16: 5000,
+    17: 6000,
+    18: 7000,
+    19: 8000,
+    20: 10000,
+    21: 12000,
+    22: 14000,
+    23: 16000,
+    24: 18000,
+    25: 20000,
+    26: 23000,   
+    27: 26000,
+    28: 28000,
+    29: 30000,
+    30: 34000,
+    31: 38000,
+    32: 42000,
+    33: 47000,
+    34: 52000,
+    35: 58000,
+    36: 64000,
+    37: 70000,
+    38: 76000,
+    39: 83000,
+    40: 90000,
+    41: 100000,
+    42: 110000,
+    43: 120000,
+    44: 130000,
+    45: 145000,
+    46: 160000, 
+    47: 175000,
+    48: 190000,
+    49: 210000,
+    50: 230000,
+    51: 250000,
+    52: 270000,
+    53: 300000,
+    54: 330000,
+    55: 360000,
+    56: 390000,
+    57: 420000,
+    58: 450000,
+    59: 480000,
+    60: 520000,
+    61: 560000,
+    62: 600000,
+    63: 640000,
+    64: 680000,
+    65: 720000,
+    66: 760000,
+    67: 800000,
+    68: 850000,
+    69: 900000,
+    70: 950000,
+    71: 1000000,
+    72: 1050000,
+    73: 1100000,
+    74: 1150000,
+    75: 1200000,
+    76: 1250000,
+    77: 1300000,
+    78: 1350000,
+    79: 1400000,
+    80: 1450000,
+    81: 1500000,
+    82: 1600000,
+    83: 1700000,
+    84: 1800000,
+    85: 1900000,
+    86: 2000000,
+    87: 2100000,
+    88: 2200000,
+    89: 2300000,
+    90: 2400000,
+    91: 2500000,
+    92: 2600000,
+    93: 2700000,
+    94: 2800000,
+    95: 2900000,
+    96: 3000000,
+    97: 3100000,
+    98: 3200000,
+    99: 3300000,
+    100: 3400000,
+    101: 3500000,
+    102: 3750000,
+};
+
 let activeWikiTab = "mob";
 
 function renderList(type){
@@ -289,7 +394,7 @@ function updateMobList(){
 
 // MINECRAFT ELEMENTS FARM CALCULATOR (Kills, Skill-XP & Level-XP)
 function calculateFarm(){
-const typeSelect = document.getElementById("typeSelect");
+    const typeSelect = document.getElementById("typeSelect");
     const mobSelect = document.getElementById("mobSelect");
     const amountInput = document.getElementById("amount");
     const calcMode = document.getElementById("calcMode");
@@ -299,7 +404,8 @@ const typeSelect = document.getElementById("typeSelect");
 
     const type = typeSelect.value;
     const name = mobSelect.value;
-    const inputValue = parseFloat(amountInput.value);
+    let inputValue = parseFloat(amountInput.value); // FIX: Von const auf let geändert, damit Rest-XP berechnet werden können
+    const mode = calcMode.value;
 
     // Setzt die Textfarbe des Ergebnisses standardmäßig auf Weiß zurück
     result.style.color = "var(--white)";
@@ -374,7 +480,7 @@ const typeSelect = document.getElementById("typeSelect");
     let toolLvlErtragBonus = 0;
     let toolDropmengeMultiplier = 1;
 
-    // ==========================================
+        // ==========================================
     // RESOURCE-LOGIK (Liest Tool-Stats aus)
     // ==========================================
     if (type === "resource") {
@@ -398,10 +504,10 @@ const typeSelect = document.getElementById("typeSelect");
     }
 
     // LEVEL-XP PRO BLOCK (Abbau-Level): Rein aus dem Shop gesteuert, Tool wird ignoriert!
-    realLvlXpPerKill = currentBaseLvlXp * boostMultiplier;
+    let realLvlXpPerKill = currentBaseLvlXp * boostMultiplier;
 
     // SKILL-XP KETTE: (Basis-Skill-XP + Tool-Levelertrag) * Serverboost * Frucht
-    realSkillXpPerKill = (baseSkillXp + toolLvlErtragBonus) * boostMultiplier * skillFruchtBonusFactor;
+    let realSkillXpPerKill = (baseSkillXp + toolLvlErtragBonus) * boostMultiplier * skillFruchtBonusFactor;
 
     // ITEM-DROP-ERTRAG KETTE: Shop-Dropmenge * Tool-Dropmenge Multiplikator
     const realItemDropPerBlock = shopDropInput * toolDropmengeMultiplier;
@@ -411,34 +517,70 @@ const typeSelect = document.getElementById("typeSelect");
     if (resultErtrag) resultErtrag.innerText = "";
 
     // ==========================================
-    // BOSS-LOGIK (Rechnen mit Keys)
+    // Lvl Wunsch
     // ==========================================
-    if (type === "boss") {
-        const keysCost = Number(data.keys_benoetigt) || 1; 
-        const totalRuns = Math.floor(inputValue / keysCost);
+    let targetSkillLvlModeActive = false; // Merker für den Spezial-Ausgabetext unten
+    
+    if (mode === "target_skill_lvl") {
+        const currentLvlInput = parseInt(document.getElementById("currentLvl")?.value) || 1;
+        const targetLvlInput = Math.floor(inputValue); // Das eingegebene Wunsch-Ziel-Level
 
-        if (totalRuns <= 0) {
+        if (targetLvlInput <= currentLvlInput) {
             result.style.color = "red";
-            result.innerText = "Nicht genug Keys für einen Boss-Run!";
+            result.innerText = "Das Ziel-Level muss höher sein als dein aktuelles Level!";
             return;
         }
 
-        result.innerText = `RUNS: ${totalRuns} | SKILL XP: +${realSkillXpPerKill * totalRuns} | LVL XP: +${realLvlXpPerKill * totalRuns}`;
+        // Holt die XP-Werte aus der globalen Tabelle
+        const currentXpTotal = LEVEL_XP_TABELLE[currentLvlInput] !== undefined ? LEVEL_XP_TABELLE[currentLvlInput] : 0;
+        const targetXpTotal = LEVEL_XP_TABELLE[targetLvlInput] !== undefined ? LEVEL_XP_TABELLE[targetLvlInput] : 0;
+
+        // Berechnet, wie viele XP dem Spieler noch bis zum Ziel-Level fehlen
+        const neededXp = targetXpTotal - currentXpTotal;
+
+        // Wir überschreiben inputValue künstlich mit den benötigten Rest-XP
+        inputValue = neededXp; 
+        targetSkillLvlModeActive = true; 
+    }
+
+    // ==========================================
+    // BOSS-LOGIK (Rechnen mit Keys / Wunsch-Level)
+    // ==========================================
+    if (type === "boss") {
+        const keysCost = Number(data.keys_benoetigt) || 1; 
+        
+        // FIX: Berechnet die Runs bei Wunsch-Level anhand der benötigten Rest-XP
+        let totalRuns = 0;
+        if (targetSkillLvlModeActive === true) {
+            totalRuns = Math.ceil(inputValue / realSkillXpPerKill);
+        } else {
+            totalRuns = Math.floor(inputValue / keysCost);
+        }
+
+        if (totalRuns <= 0) {
+            result.style.color = "red";
+            result.innerText = targetSkillLvlModeActive ? "Du bist bereits am Ziel!" : "Nicht genug Keys für einen Boss-Run!";
+            return;
+        }
+
+        // FIX: Spezial-Textausgabe für das Wunsch-Level hinzugefügt
+        if (targetSkillLvlModeActive === true) {
+            result.innerText = `BENÖTIGTE RUNS BIS ZIEL-LVL: ${totalRuns.toLocaleString()} | BENÖTIGTE KEYS: ${(totalRuns * keysCost).toLocaleString()} | REST SKILL XP: +${Math.round(inputValue).toLocaleString()}`;
+        } else {
+            result.innerText = `RUNS: ${totalRuns.toLocaleString()} | SKILL XP: +${(realSkillXpPerKill * totalRuns).toLocaleString()} | LVL XP: +${(realLvlXpPerKill * totalRuns).toLocaleString()}`;
+        }
         return;
     }
 
     // ==========================================
-    // MAGIE-LOGIK (Tränke & Levelkosten ohne Zeitrechnung bei Pots)
+    // MAGIE-LOGIK (Tränke & Levelkosten mit Zeit)
     // ==========================================
     if (type === "magie") {
-        const mode = calcMode.value;
-        
         const maxManaInput = parseFloat(document.getElementById("maxMana")?.value);
         const kleinTrankChecked = document.getElementById("useKleinTrank")?.checked;
         const grossTrankChecked = document.getElementById("useGrossTrank")?.checked;
         
         const isUsingPotions = kleinTrankChecked || grossTrankChecked;
-        // Wenn Tränke aktiv sind, wird die natürliche Regeneration laut Vorgabe ignoriert
         const manaRegenInput = isUsingPotions ? 0 : parseFloat(document.getElementById("manaRegen")?.value);
 
         if (isNaN(maxManaInput) || maxManaInput <= 0) {
@@ -453,7 +595,6 @@ const typeSelect = document.getElementById("typeSelect");
             return;
         }
 
-        // Interne Simulations-Funktion: Berechnet Klicks, Tränke, Level-Kosten UND Zeit (nur für Regen)
         function calculatePotionSimulation(uses) {
             let currentMana = maxManaInput;
             let kleinPotsUsed = 0;
@@ -464,18 +605,17 @@ const typeSelect = document.getElementById("typeSelect");
                 while (currentMana < baseManaKosten) {
                     if (baseManaKosten > maxManaInput) return { error: "Max Mana zu niedrig für dieses Item!" };
                     
-                    // FALL A: Tränke aktiv -> Sofort aufladen (Keine Zeitberechnung)
                     if (isUsingPotions) {
                         if (grossTrankChecked && (maxManaInput - currentMana >= TRANK_SYSTEM.gross.mana || !kleinTrankChecked)) {
                             currentMana += TRANK_SYSTEM.gross.mana;
                             grossPotsUsed++;
+                            secondsElapsed += 1;
                         } else if (kleinTrankChecked) {
                             currentMana += TRANK_SYSTEM.klein.mana;
                             kleinPotsUsed++;
+                            secondsElapsed += 1;
                         }
-                    } 
-                    // FALL B: Keine Tränke aktiv -> Auf natürliche Regeneration warten (Mit Zeitberechnung)
-                    else {
+                    } else {
                         if (manaRegenInput <= 0) return { error: "Mana leer! Trage Mana-Regen ein oder nutze Tränke!" };
                         
                         const manaNeeded = baseManaKosten - currentMana;
@@ -489,8 +629,8 @@ const typeSelect = document.getElementById("typeSelect");
                 }
 
                 currentMana -= baseManaKosten;
+                secondsElapsed += 1;
                 
-                // Zeit zählt nur hoch, wenn KEINE Tränke genutzt werden (reiner Regen-Modus)
                 if (!isUsingPotions) {
                     secondsElapsed += 1; 
                     currentMana += manaRegenInput;
@@ -502,8 +642,9 @@ const typeSelect = document.getElementById("typeSelect");
             return { klein: kleinPotsUsed, gross: grossPotsUsed, lvlCost: totalLvlCost, seconds: secondsElapsed };
         }
 
-        if (mode === "target_uses" || mode === "target_skill") {
-            const totalUses = mode === "target_uses" ? Math.floor(inputValue) : Math.ceil(inputValue / realSkillXpPerKill);
+        // FIX: "mode === 'target_skill_lvl'" hinzugefügt, damit die Level-Berechnung hier reinspringt
+        if (mode === "target_uses" || mode === "target_skill" || mode === "target_skill_lvl") {
+            const totalUses = (mode === "target_uses") ? Math.floor(inputValue) : Math.ceil(inputValue / realSkillXpPerKill);
             if (totalUses <= 0) { result.style.color = "red"; result.innerText = "Ungültige Eingabe!"; return; }
 
             const sim = calculatePotionSimulation(totalUses);
@@ -514,15 +655,10 @@ const typeSelect = document.getElementById("typeSelect");
                 return;
             }
 
-            // Zeit-Text nur generieren, wenn keine Tränke aktiv sind
-            let timeStr = "";
-            if (!isUsingPotions) {
-                const hours = Math.floor(sim.seconds / 3600);
-                const minutes = Math.ceil((sim.seconds % 3600) / 60);
-                timeStr = hours > 0 ? `| FARMZEIT: ca. ${hours}h ${minutes}m ` : `| FARMZEIT: ca. ${minutes}m `;
-            }
+            const hours = Math.floor(sim.seconds / 3600);
+            const minutes = Math.ceil((sim.seconds % 3600) / 60);
+            let timeStr = hours > 0 ? `| FARMZEIT: ca. ${hours}h ${minutes}m ` : `| FARMZEIT: ca. ${minutes}m `;
 
-            // Textausgabe für den Output zusammenbauen
             let potionText = "";
             if (isUsingPotions) {
                 potionText = `| TRÄNKE: `;
@@ -534,10 +670,13 @@ const typeSelect = document.getElementById("typeSelect");
                 potionText = `| MANA-REGEN`;
             }
 
-            if (mode === "target_uses") {
-                result.innerText = `NUTZUNGEN: ${totalUses} ${timeStr}| SKILL XP: +${realSkillXpPerKill * totalUses} | MANACOST: ${baseManaKosten * totalUses} ${potionText}`;
-            } else {
-                result.innerText = `NUTZUNGEN: ${totalUses} ${timeStr}| MANAVERBRAUCH: ${baseManaKosten * totalUses} Mana | ERHALTENE SKILL XP: +${realSkillXpPerKill * totalUses} ${potionText}`;
+            if (mode === "target_skill_lvl") {
+                // Spezialtext für den neuen Level-Modus
+                result.innerText = `BENÖTIGTE NUTZUNGEN BIS ZIEL-LVL: ${totalUses.toLocaleString()} ${timeStr}| BENÖTIGTE SKILL XP: +${Math.round(inputValue).toLocaleString()} ${potionText}`;
+            } else if (mode === "target_uses") {
+                result.innerText = `NUTZUNGEN: ${totalUses.toLocaleString()} ${timeStr}| SKILL XP: +${(realSkillXpPerKill * totalUses).toLocaleString()} | MANACOST: ${(baseManaKosten * totalUses).toLocaleString()} ${potionText}`;
+            } else if (mode === "target_skill") {
+                result.innerText = `NUTZUNGEN: ${totalUses.toLocaleString()} ${timeStr}| ERHALTENE SKILL XP: +${(realSkillXpPerKill * totalUses).toLocaleString()} ${potionText}`;
             }
             return;
         }
@@ -553,8 +692,6 @@ const typeSelect = document.getElementById("typeSelect");
     }
     const respawnTime = Number(data.respawn_sekunden);
     if (respawnTime <= 0) { result.style.color = "red"; result.innerText = "No Data"; return; }
-
-    const mode = calcMode.value;
 
     // ECHTE INGAME-GESCHWINDIGKEIT (Blöcke pro Sekunde berechnet aus den echten Tracker-Leistungen des Servers)
     let blocksPerSecond = 1.0; 
@@ -598,7 +735,7 @@ const typeSelect = document.getElementById("typeSelect");
     } 
 
     // MODUS B: Nach Wunsch-Skill-XP rechnen
-    else if (mode === "target_skill") {
+    else if (mode === "target_skill" || mode === "target_skill_lvl") {
         const skillXpPerHour = blocksPerHour * realSkillXpPerKill;
         const totalHoursNeeded = inputValue / skillXpPerHour;
         const requiredKills = Math.ceil(inputValue / realSkillXpPerKill);
@@ -607,21 +744,24 @@ const typeSelect = document.getElementById("typeSelect");
         const minutes = Math.round((totalHoursNeeded - hours) * 60);
         let timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
-        // Berechnet die gesamten Level-XP, die man in dieser Zeit für die Wunsch-Skill-XP bekomm
         const totalLvlXpEarned = requiredKills * realLvlXpPerKill;
 
-        result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | ERHALTENE LVL XP: +${Math.round(totalLvlXpEarned).toLocaleString()}`;
-
+        // FIX: Nutzt jetzt den korrekten Boolean "targetSkillLvlModeActive" für den Textwechsel
+        if (targetSkillLvlModeActive === true) {
+            result.innerText = `ABBAUTEN BIS ZIEL-LVL: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | BENÖTIGTE SKILL XP: +${Math.round(inputValue).toLocaleString()}`;
+        } else {
+            result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | ERHALTENE LVL XP: +${Math.round(totalLvlXpEarned).toLocaleString()}`;
+        }
+        
         if (type === "resource" && resultErtrag) {
             resultErtrag.innerText = `GEDROPTE MENGE (Ertrag): +${(realItemDropPerBlock * requiredKills).toFixed(1)} Items`;
         }
     } 
 
-    // MODUS C: Nach Wunsch-Level-XP rechnen (HIER KOMMT JETZT EXAKT 196h RAUS!)
+    // MODUS C: Nach Wunsch-Level-XP rechnen
     else if (mode === "target_lvl") {
         const lvlXpPerHour = blocksPerHour * realLvlXpPerKill;
         
-        // Berechnung: 4.900.000 Wunsch-XP / 25.000 Lvl-XP/h = exakt 196 Stunden!
         const totalHoursNeeded = inputValue / lvlXpPerHour;
         const requiredKills = Math.ceil(inputValue / realLvlXpPerKill);
         
@@ -633,7 +773,6 @@ const typeSelect = document.getElementById("typeSelect");
 
         result.innerText = `${actionWordRequired}: ${requiredKills.toLocaleString()} | FARMZEIT: ca. ${timeStr} | ERHALTENE SKILL XP: +${Math.round(totalSkillXpEarned).toLocaleString()}`;
         
-
         if (type === "resource" && resultErtrag) {
             resultErtrag.innerText = `GEDROPTE MENGE (Ertrag): +${(realItemDropPerBlock * requiredKills).toFixed(1)} Items`;
         }
@@ -861,7 +1000,8 @@ function toggleInputFields(isTypeChange = false) {
     const amountInput = document.getElementById("amount");
     const unitSelect = document.getElementById("unit");
     const manaContainer = document.getElementById("mana-inputs-container");
-    const trankContainer = document.getElementById("trank-inputs-container"); // Zentral für beide Schritte ausgelesen
+    const trankContainer = document.getElementById("trank-inputs-container");
+    const currentLvlContainer = document.getElementById("current-lvl-container")
 
     if (!typeSelect || !amountInput || !unitSelect || !calcMode) return;
 
@@ -875,32 +1015,48 @@ function toggleInputFields(isTypeChange = false) {
         calcMode.innerHTML = ""; 
 
         if (type === "boss") {
-            if (modeContainer) modeContainer.style.display = "none"; 
+            // FIX: Zeigt den Mode-Container für Bosse an, damit man dort das Wunsch-Level wählen kann!
+            if (modeContainer) modeContainer.style.display = "block"; 
+            calcMode.innerHTML = `
+                <option value="target_keys">Anzahl Keys</option>
+                <option value="target_skill">Wunsch Skill-XP</option>
+                <option value="target_skill_lvl">Wunsch Skill-Lvl</option>
+            `;
             unitSelect.style.display = "none";                      
-            amountInput.placeholder = "Anzahl Keys";
             if (manaContainer) manaContainer.style.display = "none";
-            if (trankContainer) trankContainer.style.display = "none"; // Hier korrigiert
-            return;
+            if (trankContainer) trankContainer.style.display = "none";
+            const shopContainer = document.getElementById("shop-inputs-container");
+            if (shopContainer) shopContainer.style.display = "none";
+            
+            if (oldMode === "target_skill" || oldMode === "target_skill_lvl") {
+                calcMode.value = oldMode;
+            } else {
+                calcMode.value = "target_keys";
+            }
         } 
         else if (type === "magie") {
             if (modeContainer) modeContainer.style.display = "block";
+            // FIX: "Wunsch Skill-Lvl" Option hinzugefügt
             calcMode.innerHTML = `
                 <option value="target_uses">Anzahl Uses</option>
                 <option value="target_skill">Wunsch Skill-XP</option>
+                <option value="target_skill_lvl">Wunsch Skill-Lvl</option>
             `;
-            if (oldMode === "target_skill" || oldMode === "target_uses") {
+            if (oldMode === "target_skill" || oldMode === "target_uses" || oldMode === "target_skill_lvl") {
                 calcMode.value = oldMode;
             } else {
                 calcMode.value = "target_uses";
             }
         } else {
             if (modeContainer) modeContainer.style.display = "block";
+            // FIX: "Wunsch Skill-Lvl" Option hinzugefügt
             calcMode.innerHTML = `
                 <option value="zeit">Farm-Dauer</option>
                 <option value="target_skill">Wunsch Skill-XP</option>
                 <option value="target_lvl">Wunsch Level-XP</option>
+                <option value="target_skill_lvl">Wunsch Skill-Lvl</option>
             `;
-            if (oldMode === "zeit" || oldMode === "target_skill" || oldMode === "target_lvl") {
+            if (oldMode === "zeit" || oldMode === "target_skill" || oldMode === "target_lvl" || oldMode === "target_skill_lvl") {
                 calcMode.value = oldMode;
             } else {
                 calcMode.value = "zeit";
@@ -911,21 +1067,34 @@ function toggleInputFields(isTypeChange = false) {
     // =================================================================
     // 2. SCHRITT: Nur Platzhalter & Zeiteinheiten anpassen (ohne Löschen!)
     // =================================================================
-     const shopContainer = document.getElementById("shop-inputs-container");
+    const shopContainer = document.getElementById("shop-inputs-container");
+    const mode = calcMode.value;
+
+    // Steuert die Sichtbarkeit des "Aktuelles Level"-Feldes für alle Typen
+    if (currentLvlContainer) {
+        if (mode === "target_skill_lvl") {
+            currentLvlContainer.style.display = "block";
+        } else {
+            currentLvlContainer.style.display = "none";
+        }
+    }
 
     if (type === "boss") {
-        if (modeContainer) modeContainer.style.display = "none"; 
         unitSelect.style.display = "none";                      
-        amountInput.placeholder = "Anzahl Keys";
         if (manaContainer) manaContainer.style.display = "none";
         if (trankContainer) trankContainer.style.display = "none";
-        const shopContainer = document.getElementById("shop-inputs-container");
-        if (shopContainer) shopContainer.style.display = "none"; // Auch hier im 1. Schritt verstecken
+        if (shopContainer) shopContainer.style.display = "none";
+        
+        // FIX: Setzt den Platzhalter passend für alle 3 auswählbaren Optionen
+        if (mode === "target_skill_lvl") {
+            amountInput.placeholder = "Wunsch Skill-Level (Ziel)";
+        } else if (mode === "target_skill") {
+            amountInput.placeholder = "Wunsch Skill-XP";
+        } else {
+            amountInput.placeholder = "Anzahl Keys";
+        }
         return;
     } 
-
-    if (modeContainer) modeContainer.style.display = "block";
-    const mode = calcMode.value;
 
     if (type === "magie") {
         unitSelect.style.display = "none"; 
@@ -934,22 +1103,25 @@ function toggleInputFields(isTypeChange = false) {
         if (shopContainer) shopContainer.style.display = "none";
         
         if (mode === "target_uses") {
-            amountInput.placeholder = "Anzahl Nutzungen (Uses)";
+            amountInput.placeholder = "Anzahl Uses";
         } else if (mode === "target_skill") {
             amountInput.placeholder = "Wunsch Skill-XP";
+        } else if (mode === "target_skill_lvl") {
+            // FIX: Platzhalter für das Ziel-Level
+            amountInput.placeholder = "Wunsch Skill-Level (Ziel)";
         }
     } 
     else {
         if (manaContainer) manaContainer.style.display = "none"; 
-        if (trankContainer) trankContainer.style.display = "none"; // Schaltet Trank-Checkboxen bei Mobs/Resources aus
+        if (trankContainer) trankContainer.style.display = "none";
 
         const toolContainer = document.getElementById("tool-select-container");
         if (type === "resource") {
             if (toolContainer) toolContainer.style.display = "block";
-            if (shopContainer) shopContainer.style.display = "flex"; // Schaltet Shop-Felder bei Ressourcen an
+            if (shopContainer) shopContainer.style.display = "flex";
         } else {
             if (toolContainer) toolContainer.style.display = "none";
-            if (shopContainer) shopContainer.style.display = "none"; // Schaltet Shop-Felder bei normalen Mobs aus
+            if (shopContainer) shopContainer.style.display = "none";
         }
         
         if (mode === "zeit") {
@@ -961,6 +1133,10 @@ function toggleInputFields(isTypeChange = false) {
         } else if (mode === "target_lvl") {
             unitSelect.style.display = "none";
             amountInput.placeholder = "Wunsch Level-XP";
+        } else if (mode === "target_skill_lvl") {
+            // FIX: Platzhalter für das Ziel-Level
+            unitSelect.style.display = "none";
+            amountInput.placeholder = "Wunsch Skill-Level (Ziel)";
         }
     }
 }
@@ -1124,3 +1300,4 @@ window.addEventListener("DOMContentLoaded", () => {
         history.replaceState({ page, subTab, entry: null }, "", "");
     }, 100);
 });
+//ab lvl 82 100k kosten
