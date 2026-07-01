@@ -9,6 +9,14 @@
             "lvl_xp": 45,
             "respawn_sekunden": 7.5,
             "frucht": "combat"
+            },
+            "sumpfskelett": {
+            "image": "bogged.png",
+            "text": "Ein Skelett auf der Spark Island.",
+            "skill_xp": 60,
+            "lvl_xp":100,
+            "respawn_sekunden": 7.5,
+            "frucht": "combat"
             }
         } 
     },
